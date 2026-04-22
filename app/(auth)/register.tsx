@@ -144,7 +144,7 @@ export default function RegisterScreen() {
           >
             {/* Header */}
             <View style={styles.header}>
-              <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
+              <Pressable onPress={() => router.replace('/')} style={styles.backBtn} hitSlop={10}>
                 <Text style={styles.backText}>← Retour</Text>
               </Pressable>
 

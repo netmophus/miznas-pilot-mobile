@@ -94,7 +94,7 @@ export default function ForgotPasswordScreen() {
           >
             {/* Header */}
             <View style={styles.header}>
-              <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
+              <Pressable onPress={() => router.replace('/')} style={styles.backBtn} hitSlop={10}>
                 <Text style={styles.backText}>← Retour</Text>
               </Pressable>
 
@@ -182,7 +182,7 @@ export default function ForgotPasswordScreen() {
 
                     <Pressable
                       style={styles.linkRow}
-                      onPress={() => router.back()}
+                      onPress={() => router.replace('/(auth)/login')}
                     >
                       <Text style={styles.linkText}>Vous vous souvenez ? </Text>
                       <Text style={styles.linkAccent}>Se connecter</Text>
