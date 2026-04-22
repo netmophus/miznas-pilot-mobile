@@ -775,11 +775,30 @@ export default function QuestionsScreen() {
     try {
       const token = await getToken();
       const form = new FormData();
-      form.append('file', {
-        uri,
-        name: 'question.m4a',
-        type: 'audio/m4a',
-      } as any);
+
+      if (Platform.OS === 'web') {
+        // Sur web, `uri` est un blob: URL produit par MediaRecorder.
+        // On le fetch pour recuperer le vrai Blob et on l'attache avec
+        // son type MIME reel (webm / mp4 selon le navigateur). FormData
+        // natif du navigateur gere correctement un vrai Blob.
+        const blob = await fetch(uri).then((r) => r.blob());
+        const mime = blob.type || 'audio/webm';
+        const ext = mime.includes('mp4')
+          ? 'mp4'
+          : mime.includes('ogg')
+            ? 'ogg'
+            : 'webm';
+        form.append('file', blob, `question.${ext}`);
+      } else {
+        // Sur natif (iOS/Android), fetch de RN resout l'URI local —
+        // convention { uri, name, type } attendue par le polyfill natif.
+        form.append('file', {
+          uri,
+          name: 'question.m4a',
+          type: 'audio/m4a',
+        } as any);
+      }
+
       const res = await fetch(`${API_URL}/voice/transcribe`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -797,8 +816,9 @@ export default function QuestionsScreen() {
       }
       setInput((prev) => (prev ? `${prev} ${text}` : text));
       setTimeout(() => inputRef.current?.focus(), 50);
-    } catch (e: any) {
-      setVoiceError(e?.message || 'Erreur lors de la transcription.');
+    } catch (e: unknown) {
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      setVoiceError(errorMsg || 'Erreur lors de la transcription.');
     } finally {
       setIsTranscribing(false);
     }
