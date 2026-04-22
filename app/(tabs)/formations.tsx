@@ -212,7 +212,7 @@ export default function FormationsScreen() {
             <Ionicons name="school-outline" size={22} color={COLORS.accent} />
           </View>
           <View>
-            <Text style={styles.title}>Formations IA</Text>
+            <Text style={styles.title}>Mes formations</Text>
             <Text style={styles.subtitle}>
               {formations.length} formation{formations.length > 1 ? 's' : ''} ·{' '}
               {groupedBlocs.length} bloc{groupedBlocs.length > 1 ? 's' : ''}
