@@ -1,50 +1,92 @@
-# Welcome to your Expo app 👋
+# Miznas Pilot — Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application mobile Expo / React Native pour l'assistant bancaire **Miznas Pilot** : formations bancaires, base de connaissance IA (réglementation PCB UEMOA / BCEAO), analyse de crédit et outils pour professionnels bancaires de la zone UMOA.
 
-## Get started
+## Stack
 
-1. Install dependencies
+- **Expo SDK 54** — runtime managé, build via EAS
+- **React Native 0.81** avec nouvelle architecture activée
+- **React 19**
+- **TypeScript 5.9**
+- **expo-router v6** — routing basé fichiers
+- **AsyncStorage** — persistance locale du token d'authentification
 
-   ```bash
-   npm install
-   ```
+## Prérequis
 
-2. Start the app
+- Node.js ≥ 20 (recommandé : 24.x)
+- npm ≥ 10
+- Un compte Expo pour builder (`eas login`)
+- **Android** : Android Studio (pour l'émulateur) ou un téléphone avec Expo Go
+- **iOS** : Xcode + simulateur, ou un iPhone avec Expo Go
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Installation
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Scripts disponibles
 
-## Learn more
+```bash
+npm start          # Démarre le dev server Expo (Metro)
+npm run android    # Ouvre sur un émulateur/device Android
+npm run ios        # Ouvre sur un simulateur/device iOS
+npm run web        # Ouvre la version web
+npm run lint       # Vérifie le code avec ESLint
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+En alternative : `npx expo start --clear` pour vider le cache Metro.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Build APK (Android)
 
-## Join the community
+Via **EAS Build** (cloud, pas besoin d'Android Studio en local) :
 
-Join our community of developers creating universal apps.
+```bash
+eas login
+eas build -p android --profile preview     # APK installable direct
+eas build -p android --profile production  # AAB pour Play Store
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Les profils sont définis dans `eas.json`.
+
+## Structure du projet
+
+```
+assistant-bank-mob/
+├── app/                    # Routes expo-router (file-based)
+│   ├── _layout.tsx         # Layout racine (MobileFrame + Stack)
+│   ├── index.tsx           # Écran d'accueil public (login/register)
+│   ├── (auth)/             # Login, register, mot de passe oublié
+│   └── (tabs)/             # Écrans post-login (dashboard, formations,
+│                           #   questions, profile)
+├── components/             # Composants UI partagés
+│   ├── MobileFrame.tsx     # Cadre mobile centré sur web desktop
+│   ├── FormattedText.tsx   # Renderer Markdown natif RN
+│   ├── FormationsSheet.tsx # Bottom sheet des formations
+│   └── InputField.tsx      # Champ de saisie stylé
+├── lib/                    # Clients API, auth, token storage
+├── hooks/                  # Hooks React custom
+├── constants/              # Constantes partagées
+├── assets/                 # Images, icônes, splash
+├── app.json                # Configuration Expo
+├── eas.json                # Profils de build EAS
+└── tsconfig.json           # Config TypeScript (alias @/*)
+```
+
+## Backend
+
+L'application consomme l'API **Miznas Pilot Banking** :
+
+- **URL de production** : https://api.miznas.co
+- Authentification : JWT (Bearer token stocké dans AsyncStorage sous la clé `miznas_token`)
+- Endpoints principaux : `/auth`, `/questions`, `/formations/user/my-formations`, `/qcm-responses`
+
+L'URL est configurée dans `lib/config.ts`.
+
+## Cadre mobile en version web
+
+Le composant `MobileFrame` (dans `components/`) encadre l'app dans un format téléphone centré (largeur max 480px) quand elle est ouverte sur un navigateur desktop (≥ 768px). Sur mobile (iOS / Android / petit écran web), le composant est transparent.
+
+## Licence
+
+Propriétaire — © Miznas Pilot. Tous droits réservés.

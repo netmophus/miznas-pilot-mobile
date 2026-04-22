@@ -1,33 +1,90 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePermissions } from '@/hooks/usePermissions';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+const COLORS = {
+  bg: '#0A1434',
+  surface: '#0F1E48',
+  border: '#1B3A8C',
+  active: '#C9A84C',
+  inactive: 'rgba(203,213,225,0.4)',
+};
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { can, loading } = usePermissions();
+  const insets = useSafeAreaInsets();
+
+  if (loading) return null;
+
+  const tabBarHeight = 60 + insets.bottom;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarStyle: {
+          backgroundColor: COLORS.surface,
+          borderTopColor: COLORS.border,
+          borderTopWidth: 1,
+          height: tabBarHeight,
+          paddingBottom: insets.bottom + 15,
+          paddingTop: 5,
+        },
+        tabBarActiveTintColor: COLORS.active,
+        tabBarInactiveTintColor: COLORS.inactive,
+        tabBarIconStyle: {
+          marginBottom: 1,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
+        },
+      }}
+    >
+      {/* Accueil — toujours visible */}
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Accueil',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
         }}
       />
+
+      {/* Formations — selon permissions */}
       <Tabs.Screen
-        name="explore"
+        name="formations"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Formations',
+          href: can('formations') ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="school-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* Base de connaissances — selon permissions */}
+      <Tabs.Screen
+        name="questions"
+        options={{
+          title: 'Connaissances',
+          href: can('questions') ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="library-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* Profil — toujours visible */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
         }}
       />
     </Tabs>
