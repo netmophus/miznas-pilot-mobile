@@ -327,10 +327,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'space-between',
     paddingVertical: 20,
-    gap: 24,
+    gap: 32,
   },
 
   content: {
