@@ -202,7 +202,7 @@ export default function LoginScreen() {
                   style={styles.linkRow}
                   onPress={() => router.replace('/(auth)/register')}
                 >
-                  <Text style={styles.linkText}>Pas encore de compte ? </Text>
+                  <Text style={styles.linkText}>Nouveau ? </Text>
                   <Text style={styles.linkAccent}>Créer un compte</Text>
                 </Pressable>
               </View>
