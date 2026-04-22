@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '@/components/Logo';
 import InputField from '@/components/InputField';
-import { apiClient } from '@/lib/api';
+import { registerDemo } from '@/lib/auth';
 
 function formatRegisterError(err: any): string {
   const raw = (err?.message || '').toString().toLowerCase();
@@ -55,15 +55,21 @@ const COLORS = {
 };
 
 interface FormErrors {
-  fullName?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
+  phoneCountryCode?: string;
+  phoneNumber?: string;
   password?: string;
   confirmPassword?: string;
 }
 
 export default function RegisterScreen() {
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+227');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -73,9 +79,16 @@ export default function RegisterScreen() {
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
-    if (!fullName.trim()) newErrors.fullName = 'Nom requis';
+    if (!firstName.trim()) newErrors.firstName = 'Prénom requis';
+    if (!lastName.trim()) newErrors.lastName = 'Nom requis';
     if (!email.includes('@')) newErrors.email = 'Email invalide';
-    if (password.length < 8) newErrors.password = 'Minimum 8 caractères';
+    if (!/^\+\d{1,4}$/.test(phoneCountryCode.trim())) {
+      newErrors.phoneCountryCode = 'Format +XXX';
+    }
+    if (phoneNumber.replace(/\D/g, '').length < 6) {
+      newErrors.phoneNumber = 'Minimum 6 chiffres';
+    }
+    if (password.length < 6) newErrors.password = 'Minimum 6 caractères';
     if (password !== confirmPassword) newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -86,13 +99,18 @@ export default function RegisterScreen() {
     if (!validate()) return;
     setIsLoading(true);
     try {
-      await apiClient.post('/auth/register', {
+      await registerDemo({
         email: email.trim().toLowerCase(),
         password,
-        full_name: fullName.trim(),
-        // pas d'organization_id → auto-assigné à MIZNAS (compte démo)
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        phone_country_code: phoneCountryCode.trim(),
+        phone_number: phoneNumber.replace(/\s/g, ''),
       });
+      // Auto-login : le token + user sont stockes par registerDemo(),
+      // on redirige directement vers l'espace connecte.
       setSuccess(true);
+      setTimeout(() => router.replace('/(tabs)'), 1200);
     } catch (err: any) {
       setGlobalError(formatRegisterError(err));
     } finally {
@@ -110,16 +128,10 @@ export default function RegisterScreen() {
             </View>
             <Text style={styles.successTitle}>Compte créé !</Text>
             <Text style={styles.successSubtitle}>
-              Votre compte démo est actif !{'\n'}
-              Accédez à 2 formations et posez jusqu'à{'\n'}
-              2 questions à Miznas AI.
+              Votre compte démo est actif.{'\n'}
+              Redirection en cours…
             </Text>
-            <Pressable
-              style={styles.btnSubmit}
-              onPress={() => router.replace('/(auth)/login')}
-            >
-              <Text style={styles.btnSubmitText}>Se connecter</Text>
-            </Pressable>
+            <ActivityIndicator color={COLORS.accent} size="large" style={{ marginTop: 16 }} />
           </View>
         </SafeAreaView>
       </View>
@@ -191,14 +203,25 @@ export default function RegisterScreen() {
                 </View>
 
                 <InputField
-                  label="Nom complet"
+                  label="Prénom"
                   icon="person-outline"
-                  placeholder="Aboubacar Mahaman Lawan"
-                  value={fullName}
-                  onChangeText={setFullName}
-                  error={errors.fullName}
-                  textContentType="name"
-                  autoComplete="name"
+                  placeholder="Aboubacar"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  error={errors.firstName}
+                  textContentType="givenName"
+                  autoComplete="given-name"
+                />
+
+                <InputField
+                  label="Nom"
+                  icon="person-outline"
+                  placeholder="Mahaman Lawan"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  error={errors.lastName}
+                  textContentType="familyName"
+                  autoComplete="family-name"
                 />
 
                 <InputField
@@ -212,6 +235,34 @@ export default function RegisterScreen() {
                   textContentType="emailAddress"
                   autoComplete="email"
                 />
+
+                {/* Téléphone : indicatif + numéro côte à côte */}
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={{ width: 110 }}>
+                    <InputField
+                      label="Indicatif"
+                      icon="globe-outline"
+                      placeholder="+227"
+                      value={phoneCountryCode}
+                      onChangeText={setPhoneCountryCode}
+                      error={errors.phoneCountryCode}
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <InputField
+                      label="Téléphone"
+                      icon="call-outline"
+                      placeholder="90 00 00 00"
+                      value={phoneNumber}
+                      onChangeText={setPhoneNumber}
+                      error={errors.phoneNumber}
+                      keyboardType="phone-pad"
+                      textContentType="telephoneNumber"
+                      autoComplete="tel"
+                    />
+                  </View>
+                </View>
 
                 {/* Bandeau démo */}
                 <View style={styles.demoBanner}>
@@ -227,7 +278,7 @@ export default function RegisterScreen() {
                 <InputField
                   label="Mot de passe"
                   icon="lock-closed-outline"
-                  placeholder="Minimum 8 caractères"
+                  placeholder="Minimum 6 caractères"
                   value={password}
                   onChangeText={setPassword}
                   error={errors.password}

@@ -67,6 +67,33 @@ export async function login(
   };
 }
 
+export interface RegisterDemoRequest {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  phone_country_code: string;
+  phone_number: string;
+}
+
+/**
+ * Inscription DEMO via app mobile. Rattache l'user a l'org et au dept DEMO,
+ * retourne directement un JWT (pas besoin de second login). Equivalent de
+ * `login()` mais via /auth/register-demo.
+ */
+export async function registerDemo(
+  data: RegisterDemoRequest
+): Promise<AuthResponse> {
+  const res = await apiClient.post<AuthResponse>('/auth/register-demo', data);
+
+  await setToken(res.access_token);
+  await setUser(res.user);
+  await fetchAndStoreAllowedTabs();
+  setLoggedInCookie();
+
+  return res;
+}
+
 export async function logout(): Promise<void> {
   // Supprimer le cookie partage en premier pour eviter toute fenetre ou
   // www.miznas.co redirigerait apres deconnexion (no-op sur natif).
