@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from './api';
 import { getToken, setToken, removeToken } from './token';
 import { fetchAndStoreAllowedTabs, clearAllowedTabs } from './permissions';
+import { setLoggedInCookie, clearLoggedInCookie } from './cookie';
 
 const USER_KEY = 'miznas_user';
 
@@ -55,6 +56,10 @@ export async function login(
   // 5. Récupérer et stocker les tabs autorisés
   await fetchAndStoreAllowedTabs();
 
+  // 6. Poser le cookie partagé .miznas.co pour la redirection intelligente
+  //    depuis www.miznas.co (no-op sur natif).
+  setLoggedInCookie();
+
   return {
     access_token: tokenRes.access_token,
     token_type: tokenRes.token_type,
@@ -63,6 +68,9 @@ export async function login(
 }
 
 export async function logout(): Promise<void> {
+  // Supprimer le cookie partage en premier pour eviter toute fenetre ou
+  // www.miznas.co redirigerait apres deconnexion (no-op sur natif).
+  clearLoggedInCookie();
   await removeToken();
   await AsyncStorage.removeItem(USER_KEY);
   await clearAllowedTabs();
