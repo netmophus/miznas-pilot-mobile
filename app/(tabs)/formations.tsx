@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -61,6 +63,8 @@ interface Formation {
   bloc_numero?: number | null;
   bloc_titre?: string | null;
   bloc_label?: string | null;
+  // true = formation teaser non accessible (affichee en gris, clic ouvre modal upgrade)
+  is_locked?: boolean;
 }
 
 interface BlocGroup {
@@ -85,11 +89,30 @@ export default function FormationsScreen() {
 
   useEffect(() => {
     apiClient
-      .get<Formation[]>('/formations/user/my-formations')
+      .get<Formation[]>('/formations/user/my-formations?include_locked=true')
       .then(setFormations)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleLockedClick = (f: Formation) => {
+    Alert.alert(
+      'Formation non accessible',
+      `"${f.titre}" fait partie de l'offre complète Miznas Pilot.\n\nContactez-nous pour activer votre licence et débloquer cette formation.`,
+      [
+        { text: 'Plus tard', style: 'cancel' },
+        {
+          text: 'Nous contacter',
+          onPress: () =>
+            Linking.openURL(
+              'mailto:support@miznasbanking.com?subject=Demande%20de%20licence%20Miznas%20Pilot&body=Bonjour,%0A%0AJe%20souhaite%20d%C3%A9bloquer%20la%20formation%20%3A%20' +
+                encodeURIComponent(f.titre) +
+                '%0A%0A',
+            ),
+        },
+      ],
+    );
+  };
 
   const groupedBlocs = useMemo<BlocGroup[]>(() => {
     const map = new Map<string, BlocGroup>();
@@ -263,44 +286,62 @@ export default function FormationsScreen() {
                   <View style={styles.formationsList}>
                     {bloc.formations.map((f) => {
                       const isFormOpen = expandedFormationId === f.id;
+                      const isLocked = !!f.is_locked;
                       return (
-                        <View key={f.id} style={styles.formationItem}>
+                        <View key={f.id} style={[styles.formationItem, isLocked && styles.formationItemLocked]}>
                           {/* Formation row */}
                           <Pressable
                             style={({ pressed }) => [
                               styles.formationRow,
                               pressed && { opacity: 0.85 },
                             ]}
-                            onPress={() => toggleFormation(f.id)}
+                            onPress={() => (isLocked ? handleLockedClick(f) : toggleFormation(f.id))}
                           >
                             <View style={styles.formationRowContent}>
-                              <Text style={styles.formationTitle} numberOfLines={2}>
-                                {f.titre}
-                              </Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                {isLocked && (
+                                  <Ionicons
+                                    name="lock-closed"
+                                    size={13}
+                                    color="rgba(201,168,76,0.55)"
+                                    style={{ marginRight: 2 }}
+                                  />
+                                )}
+                                <Text
+                                  style={[styles.formationTitle, isLocked && styles.formationTitleLocked]}
+                                  numberOfLines={2}
+                                >
+                                  {f.titre}
+                                </Text>
+                              </View>
                               {f.description ? (
-                                <Text style={styles.formationDesc} numberOfLines={2}>
+                                <Text
+                                  style={[styles.formationDesc, isLocked && styles.formationDescLocked]}
+                                  numberOfLines={2}
+                                >
                                   {f.description}
                                 </Text>
                               ) : null}
                               <View style={styles.formationMeta}>
-                                <View style={styles.metaBadge}>
-                                  <Text style={styles.metaBadgeText}>
-                                    {f.modules_count ?? f.modules?.length ?? 0} module
-                                    {(f.modules_count ?? f.modules?.length ?? 0) > 1 ? 's' : ''}
+                                <View style={[styles.metaBadge, isLocked && styles.metaBadgeLocked]}>
+                                  <Text style={[styles.metaBadgeText, isLocked && styles.metaBadgeTextLocked]}>
+                                    {isLocked
+                                      ? 'Non accessible — version complète'
+                                      : `${f.modules_count ?? f.modules?.length ?? 0} module${(f.modules_count ?? f.modules?.length ?? 0) > 1 ? 's' : ''}`}
                                   </Text>
                                 </View>
                               </View>
                             </View>
                             <Ionicons
-                              name={isFormOpen ? 'chevron-up' : 'chevron-down'}
+                              name={isLocked ? 'lock-closed' : isFormOpen ? 'chevron-up' : 'chevron-down'}
                               size={16}
-                              color={COLORS.muted}
-                              style={{ opacity: 0.5, marginTop: 2 }}
+                              color={isLocked ? COLORS.accent : COLORS.muted}
+                              style={{ opacity: isLocked ? 0.6 : 0.5, marginTop: 2 }}
                             />
                           </Pressable>
 
-                          {/* ── Modules ─────────────────────────── */}
-                          {isFormOpen && (
+                          {/* ── Modules (seulement si accessible) ── */}
+                          {!isLocked && isFormOpen && (
                             <View style={styles.modulesContainer}>
                               {(f.modules || []).length === 0 ? (
                                 <Text style={styles.emptyModules}>
@@ -673,6 +714,25 @@ const styles = StyleSheet.create({
   formationItem: {
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(27,58,140,0.15)',
+  },
+  // Styles appliques aux formations locked (teaser non accessible)
+  formationItemLocked: {
+    backgroundColor: 'rgba(10,20,52,0.4)',
+  },
+  formationTitleLocked: {
+    color: 'rgba(255,255,255,0.5)',
+    fontStyle: 'italic',
+  },
+  formationDescLocked: {
+    color: 'rgba(203,213,225,0.35)',
+  },
+  metaBadgeLocked: {
+    backgroundColor: 'rgba(201,168,76,0.1)',
+    borderColor: 'rgba(201,168,76,0.25)',
+  },
+  metaBadgeTextLocked: {
+    color: COLORS.accent,
+    opacity: 0.7,
   },
   formationRow: {
     flexDirection: 'row',
